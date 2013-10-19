@@ -6,12 +6,18 @@ class args
 
   function args($obj=null)
   {
-    $this->obj=$obj;
+    $this->handlerInstance=$obj;
     $this->resetCallback();
-    $this->optionsMap=array(
+    $this->optionPrefixes=array(
       '-'=>'dash',
       '/'=>'slash',
       '--'=>'dash_dash',
+    );
+    $this->callbackVariants=array(
+      'bundled'=>'%s_bundled',
+      'numeric'=>'%s_NN',
+      'arg'=>'%s_',
+      'base'=>'%s',
     );
     $this->debug=false;
   }
@@ -28,10 +34,13 @@ class args
       if($ok)
         continue;
       
-      $ok=$this->determineCallback($v);
+      $ok=$this->parseOption($rawArgument)
       if($ok) {
-        $this->attemptCallback();
-        continue;
+        $ok2=$this->determineCallback();
+        if($ok2) {
+          $this->attemptCallback();
+          continue;
+        }
       }
       
       if(!$this->callback)
@@ -40,19 +49,15 @@ class args
     return $args;
   }
   
-  function determineCallback($rawArgument)
+  function determineCallback()
   {
-    $ok=$this->parseOption($rawArgument);
-    if(!$ok)
-      return false;
-
-    $callbackName="option_{$this->optionMapping}_{$this->optionName}";
-    //echo $callbackName,"\n";
-
-    if(is_object($this->obj))
-      $callback=array($this->obj,$callbackName);
-    else
-      $callback=$callbackName;
+    
+    foreach( as $k=>$callback)
+    {
+      if(is_object($this->handlerInstance))
+        $callback=array($this->handlerInstance,$this->callbackName);
+      else
+        $callback=$this->callbackName;
 
     $this->debugReport($callback);
 
@@ -64,8 +69,8 @@ class args
     
     $callbackName.='_';
 
-    if(is_object($this->obj))
-      $callback=array($this->obj,$callbackName);
+    if(is_object($this->handlerInstance))
+      $callback=array($this->handlerInstance,$callbackName);
     else
       $callback=$callbackName;
     
@@ -107,25 +112,48 @@ class args
     $this->waitingForArgument=false;
   }
 
+  /**
+    parses a $rawArgument like '-someoption' recognizes the prefix
+   */
   function parseOption($rawArgument)
   {
-    $lead=$rawArgument[0].$rawArgument[1];
-    @$match=$this->optionsMap[$lead];
+    #
+    # lookup prefix in $this->optionPrefixes
+    # first try one with 2 chars, then one with a single char
+    #
+    $prefix=substr($rawArgument,0,2);
+    @$mapped=$this->optionPrefixes[$prefix];
 
-    if(!$match){
-      $lead=$rawArgument[0];
-      @$match=$this->optionsMap[$lead];
+    if(!$mapped){
+      $prefix=$prefix[0];
+      @$mapped=$this->optionPrefixes[$prefix];
     }
-      
-    if($match) {
-      $this->optionLead=$lead;
-      $this->optionName=substr($rawArgument,strlen($lead));
-      $this->optionName=strtr(rawurlencode($this->optionName),array('%'=>'','-'=>'2D'));
-      $this->optionMapping=$match;
-      return true;
-    }
+     
+    #
+    # no match in $mapped? bail out
+    #
+    if(!$mapped) return false;
     
-    return false;
+    #
+    # still here? parse option
+    #
+    $this->optionPrefix=$prefix;
+      
+    // now parse $optionName
+    $optionName=substr($rawArgument,strlen($prefix));
+    
+    // parse eventual "=value" arguments
+    list($optionName,$argument)=split('=',$optionName,2);
+   
+    // normalize optionName
+    $optionName=strtr(rawurlencode($optionName),array('%'=>'','-'=>'2D'));
+
+    $baseCallbackName="option_{$mapped}_{$optionName}";
+    
+    $this->findCallback($baseCallbackName);
+    $this->argument=$argument;
+
+    return true;
   }
 
   function debugReport($callback)
