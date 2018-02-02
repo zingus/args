@@ -1,25 +1,55 @@
 <?php
 //TODO this shit needs documentation
+/*
+  Usage example:
+
+  class stikazziArgs extends args
+  {
+    function dash_dash_someoption()
+    {
+      // handle it
+    }
+
+    function dash_someoptionwitharguments_($arg)
+    {
+      // handle it and its $arg
+    }
+
+    function handle($arg) 
+    {
+      // handle a single args
+    }
+
+    function handleAll($argList) 
+    {
+      // handle a whole $argList
+    }
+
+  }
+
+  $args=new stikazziArgs();
+
+  PROPOSAL: change name to argHandler.php?
+            change name to argFucker.php?
+            change name to argumenter.php? <=
+            change name to argp.php?
+*/
 
 class args
 {
 
   function args($obj=null)
   {
-    $this->handlerInstance=$obj;
+    $this->obj=$obj;
     $this->resetCallback();
-    $this->optionPrefixes=array(
+    $this->optionsMap=array(
       '-'=>'dash',
       '/'=>'slash',
       '--'=>'dash_dash',
     );
-    $this->callbackVariants=array(
-      'bundled'=>'%s_bundled',
-      'numeric'=>'%s_NN',
-      'arg'=>'%s_',
-      'base'=>'%s',
-    );
     $this->debug=false;
+    $this->init();
+    $this->argList=$this->process();
   }
 
   function process()
@@ -34,30 +64,35 @@ class args
       if($ok)
         continue;
       
-      $ok=$this->parseOption($rawArgument)
+      $ok=$this->determineCallback($v);
       if($ok) {
-        $ok2=$this->determineCallback();
-        if($ok2) {
-          $this->attemptCallback();
-          continue;
-        }
+        $this->attemptCallback();
+        continue;
       }
       
-      if(!$this->callback)
+      if(!$this->callback) {
+        $this->handle($v);
         $args[]=$v;
+      }
     }
+    
+    $this->handleAll($args);
     return $args;
   }
   
-  function determineCallback()
+  function determineCallback($rawArgument)
   {
-    
-    foreach( as $k=>$callback)
-    {
-      if(is_object($this->handlerInstance))
-        $callback=array($this->handlerInstance,$this->callbackName);
-      else
-        $callback=$this->callbackName;
+    $ok=$this->parseOption($rawArgument);
+    if(!$ok)
+      return false;
+
+    $callbackName="option_{$this->optionMapping}_{$this->optionName}";
+    //echo $callbackName,"\n";
+
+    if(is_object($this->obj))
+      $callback=array($this->obj,$callbackName);
+    else
+      $callback=$callbackName;
 
     $this->debugReport($callback);
 
@@ -69,8 +104,8 @@ class args
     
     $callbackName.='_';
 
-    if(is_object($this->handlerInstance))
-      $callback=array($this->handlerInstance,$callbackName);
+    if(is_object($this->obj))
+      $callback=array($this->obj,$callbackName);
     else
       $callback=$callbackName;
     
@@ -112,48 +147,25 @@ class args
     $this->waitingForArgument=false;
   }
 
-  /**
-    parses a $rawArgument like '-someoption' recognizes the prefix
-   */
   function parseOption($rawArgument)
   {
-    #
-    # lookup prefix in $this->optionPrefixes
-    # first try one with 2 chars, then one with a single char
-    #
-    $prefix=substr($rawArgument,0,2);
-    @$mapped=$this->optionPrefixes[$prefix];
+    $lead=$rawArgument[0].$rawArgument[1];
+    @$match=$this->optionsMap[$lead];
 
-    if(!$mapped){
-      $prefix=$prefix[0];
-      @$mapped=$this->optionPrefixes[$prefix];
+    if(!$match){
+      $lead=$rawArgument[0];
+      @$match=$this->optionsMap[$lead];
     }
-     
-    #
-    # no match in $mapped? bail out
-    #
-    if(!$mapped) return false;
-    
-    #
-    # still here? parse option
-    #
-    $this->optionPrefix=$prefix;
       
-    // now parse $optionName
-    $optionName=substr($rawArgument,strlen($prefix));
+    if($match) {
+      $this->optionLead=$lead;
+      $this->optionName=substr($rawArgument,strlen($lead));
+      $this->optionName=strtr(rawurlencode($this->optionName),array('%'=>'','-'=>'2D'));
+      $this->optionMapping=$match;
+      return true;
+    }
     
-    // parse eventual "=value" arguments
-    list($optionName,$argument)=split('=',$optionName,2);
-   
-    // normalize optionName
-    $optionName=strtr(rawurlencode($optionName),array('%'=>'','-'=>'2D'));
-
-    $baseCallbackName="option_{$mapped}_{$optionName}";
-    
-    $this->findCallback($baseCallbackName);
-    $this->argument=$argument;
-
-    return true;
+    return false;
   }
 
   function debugReport($callback)
@@ -177,6 +189,21 @@ class args
 
 
     echo "Looking for $what $leader$callback($arg)$trailer\n";
+  }
+
+  function init()
+  {
+  
+  }
+
+  function handle($arg)
+  {
+  
+  }
+
+  function handleAll($list)
+  {
+  
   }
 }
 
