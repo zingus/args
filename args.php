@@ -1,9 +1,11 @@
 <?php
+namespace Args;
+
 //TODO this shit needs documentation
 /*
   Usage example:
 
-  class stikazziArgs extends args
+  class CommandLineArgs extends args
   {
     function dash_dash_someoption()
     {
@@ -27,12 +29,8 @@
 
   }
 
-  $args=new stikazziArgs();
+  $args=new CommandLineArgs();
 
-  PROPOSAL: change name to argHandler.php?
-            change name to argFucker.php?
-            change name to argumenter.php? <=
-            change name to argp.php?
 */
 
 class args
