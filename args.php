@@ -1,5 +1,39 @@
 <?php
 //TODO this shit needs documentation
+/*
+  Usage example:
+
+  class stikazziArgs extends args
+  {
+    function dash_dash_someoption()
+    {
+      // handle it
+    }
+
+    function dash_someoptionwitharguments_($arg)
+    {
+      // handle it and its $arg
+    }
+
+    function handle($arg) 
+    {
+      // handle a single args
+    }
+
+    function handleAll($argList) 
+    {
+      // handle a whole $argList
+    }
+
+  }
+
+  $args=new stikazziArgs();
+
+  PROPOSAL: change name to argHandler.php?
+            change name to argFucker.php?
+            change name to argumenter.php? <=
+            change name to argp.php?
+*/
 
 class args
 {
@@ -14,6 +48,8 @@ class args
       '--'=>'dash_dash',
     );
     $this->debug=false;
+    $this->init();
+    $this->argList=$this->process();
   }
 
   function process()
@@ -34,9 +70,13 @@ class args
         continue;
       }
       
-      if(!$this->callback)
+      if(!$this->callback) {
+        $this->handle($v);
         $args[]=$v;
+      }
     }
+    
+    $this->handleAll($args);
     return $args;
   }
   
@@ -149,6 +189,21 @@ class args
 
 
     echo "Looking for $what $leader$callback($arg)$trailer\n";
+  }
+
+  function init()
+  {
+  
+  }
+
+  function handle($arg)
+  {
+  
+  }
+
+  function handleAll($list)
+  {
+  
   }
 }
 
