@@ -1,0 +1,14 @@
+{
+    "name": "zingus/args",
+    "description": "argv parser for php",
+    "type": "library",
+    "license": "GPL",
+    "authors": [
+        {
+            "name": "zingus",
+            "email": "zingus@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {}
+}
